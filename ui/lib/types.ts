@@ -37,3 +37,32 @@ export interface TaskInfo {
   output_size: number
   cpu: number
 }
+
+export interface VmResources {
+  PE: number
+  RAM: number
+  Storage: number
+}
+
+export interface TaskSegments {
+  start: number
+  end: number
+  vm: string
+}
+
+export interface Task {
+  id: string
+  segments: TaskSegments[]
+}
+
+export interface PolicyReponse {
+  vmAllocationPolicy: string[]
+  taskSchedulerPolicy: string[]
+}
+
+export interface SimulationResponse {
+  taskHistory: {
+    tasks: Task[]
+  }
+  vmUtilization: Record<string, VmResources>
+}

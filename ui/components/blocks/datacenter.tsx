@@ -351,7 +351,7 @@ const DatacenterTable: React.FC<DatacenterTableProps> = ({
                   type="number"
                   min={0}
                   step={0.001}
-                  value={formData.cost}
+                  value={formData.costStorage}
                   onChange={updateField("costStorage")}
                   required
                 />

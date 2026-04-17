@@ -36,6 +36,8 @@ import { toast } from "sonner"
 interface VMTableProps {
   data: VMInfo[]
   setData: React.Dispatch<React.SetStateAction<VMInfo[]>>
+  id: number
+  setId: React.Dispatch<React.SetStateAction<number>>
 }
 
 const VM_HEADERS: Array<keyof VMInfo> = [
@@ -47,10 +49,10 @@ const VM_HEADERS: Array<keyof VMInfo> = [
   "mips",
 ]
 
-const newVM = (): VMInfo => {
-  const uuid = crypto.randomUUID()
+const newVM = (id: number): VMInfo => {
+  id += 1
   return {
-    id: uuid,
+    id: `VM-${id}`,
     ram: 0,
     bandwidth: 0,
     storage: 0,
@@ -59,11 +61,11 @@ const newVM = (): VMInfo => {
   }
 }
 
-const VMTable: React.FC<VMTableProps> = ({ data, setData }) => {
+const VMTable: React.FC<VMTableProps> = ({ data, setData, id, setId }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
-  const [formData, setFormData] = useState<VMInfo>(newVM())
+  const [formData, setFormData] = useState<VMInfo>(newVM(id))
 
   const removeVM = (vm: VMInfo) => {
     setData((prev) => prev.filter((item) => item.id !== vm.id))
@@ -74,6 +76,9 @@ const VMTable: React.FC<VMTableProps> = ({ data, setData }) => {
     )
   }
   const addVM = (vm: VMInfo) => {
+    id += 1
+    setId(id)
+    vm.id = `VM-${id}`
     setData((prev) => [...prev, vm])
   }
 
@@ -92,7 +97,7 @@ const VMTable: React.FC<VMTableProps> = ({ data, setData }) => {
     setIsDialogOpen(true)
   }
   const openAddDialog = () => {
-    setFormData(newVM())
+    setFormData(newVM(id))
     setIsEditing(false)
     setIsDialogOpen(true)
   }
@@ -173,7 +178,7 @@ const VMTable: React.FC<VMTableProps> = ({ data, setData }) => {
     const link = document.createElement("a")
 
     link.href = url
-    link.download = "vm.csv"
+    link.download = "vms.csv"
     document.body.append(link)
     link.click()
     link.remove()

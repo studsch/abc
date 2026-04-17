@@ -44,6 +44,8 @@ interface HostTableProps {
   setData: React.Dispatch<React.SetStateAction<HostInfo[]>>
   datacenter: DatacenterInfo
   setDatacenter: React.Dispatch<React.SetStateAction<DatacenterInfo>>
+  id: number
+  setId: React.Dispatch<React.SetStateAction<number>>
 }
 
 const HOST_HEADERS: Array<keyof HostInfo> = [
@@ -56,10 +58,10 @@ const HOST_HEADERS: Array<keyof HostInfo> = [
   "mips",
 ]
 
-const newHost = (datacenterId: string): HostInfo => {
-  const uuid = crypto.randomUUID()
+const newHost = (id: number, datacenterId: string): HostInfo => {
+  id += 1
   return {
-    id: uuid,
+    id: `HOST-${id}`,
     ram: 0,
     bandwidth: 0,
     storage: 0,
@@ -74,11 +76,13 @@ const HostTable: React.FC<HostTableProps> = ({
   setData,
   datacenter,
   setDatacenter,
+  id,
+  setId,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
-  const [formData, setFormData] = useState<HostInfo>(newHost(datacenter.id))
+  const [formData, setFormData] = useState<HostInfo>(newHost(id, datacenter.id))
 
   const updateDatacenter = (dc: DatacenterInfo) => {
     setDatacenter(dc)
@@ -111,6 +115,9 @@ const HostTable: React.FC<HostTableProps> = ({
     )
   }
   const addHost = (host: HostInfo) => {
+    id += 1
+    setId(id)
+    host.id = `HOST-${id}`
     setData((prev) => [...prev, host])
   }
 
@@ -129,7 +136,7 @@ const HostTable: React.FC<HostTableProps> = ({
     setIsDialogOpen(true)
   }
   const openAddDialog = () => {
-    setFormData(newHost(datacenter.id))
+    setFormData(newHost(id, datacenter.id))
     setIsEditing(false)
     setIsDialogOpen(true)
   }

@@ -11,11 +11,11 @@ import { useEffect, useState } from "react"
 export default function Page() {
   const [totalCost, setTotalCost] = useState<Number>(0)
   const [datacenterInfo, setDatacenterInfo] = useState<DatacenterInfo>({
-    id: "datacenter-001",
+    id: "DATACENTER-1",
     os: "linux",
     arch: "x86",
     cost: 100.0,
-    costRAM: 0.01,
+    costRAM: 0.1,
     costBandwidth: 0.0,
     costStorage: 0.002,
     costTotal: 0.0,
@@ -28,6 +28,10 @@ export default function Page() {
   const [taskPolicyOptions, setTaskPolicyOptions] = useState<string[]>([])
   const [selectedVMPolicy, setSelectedVMPolicy] = useState<string>("")
   const [selectedTaskPolicy, setSelectedTaskPolicy] = useState<string>("")
+
+  const [hostId, setHostId] = useState<number>(0)
+  const [vmId, setVmId] = useState<number>(0)
+  const [taskId, setTaskId] = useState<number>(0)
 
   useEffect(() => {
     setTotalCost(datacenterInfo.costTotal)
@@ -68,10 +72,22 @@ export default function Page() {
             setData={setHostArray}
             datacenter={datacenterInfo}
             setDatacenter={setDatacenterInfo}
+            id={hostId}
+            setId={setHostId}
           />
           <div className="grid gap-4 xl:grid-cols-2">
-            <VMTable data={vmArray} setData={setVMArray} />
-            <TaskTable data={taskArray} setData={setTaskArray} />
+            <VMTable
+              data={vmArray}
+              setData={setVMArray}
+              id={vmId}
+              setId={setVmId}
+            />
+            <TaskTable
+              data={taskArray}
+              setData={setTaskArray}
+              id={taskId}
+              setId={setTaskId}
+            />
           </div>
         </section>
 
@@ -84,6 +100,10 @@ export default function Page() {
           setSelectedVMPolicy={setSelectedVMPolicy}
           selectedTaskPolicy={selectedTaskPolicy}
           setSelectedTaskPolicy={setSelectedTaskPolicy}
+          datacenter={datacenterInfo}
+          hostArray={hostArray}
+          vmArray={vmArray}
+          taskArray={taskArray}
         />
       </div>
     </main>

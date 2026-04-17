@@ -36,6 +36,8 @@ import { toast } from "sonner"
 interface TaskTableProps {
   data: TaskInfo[]
   setData: React.Dispatch<React.SetStateAction<TaskInfo[]>>
+  id: number
+  setId: React.Dispatch<React.SetStateAction<number>>
 }
 
 const TASK_HEADERS: Array<keyof TaskInfo> = [
@@ -46,10 +48,10 @@ const TASK_HEADERS: Array<keyof TaskInfo> = [
   "cpu",
 ]
 
-const newTask = (): TaskInfo => {
-  const uuid = crypto.randomUUID()
+const newTask = (id: number): TaskInfo => {
+  id += 1
   return {
-    id: uuid,
+    id: `TASK-${id}`,
     length: 0,
     input_size: 0,
     output_size: 0,
@@ -57,11 +59,11 @@ const newTask = (): TaskInfo => {
   }
 }
 
-const TaskTable: React.FC<TaskTableProps> = ({ data, setData }) => {
+const TaskTable: React.FC<TaskTableProps> = ({ data, setData, id, setId }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
-  const [formData, setFormData] = useState<TaskInfo>(newTask())
+  const [formData, setFormData] = useState<TaskInfo>(newTask(id))
 
   const removeTask = (task: TaskInfo) => {
     setData((prev) => prev.filter((item) => item.id !== task.id))
@@ -72,6 +74,9 @@ const TaskTable: React.FC<TaskTableProps> = ({ data, setData }) => {
     )
   }
   const addTask = (task: TaskInfo) => {
+    id += 1
+    setId(id)
+    task.id = `TASK-${id}`
     setData((prev) => [...prev, task])
   }
 
@@ -90,7 +95,7 @@ const TaskTable: React.FC<TaskTableProps> = ({ data, setData }) => {
     setIsDialogOpen(true)
   }
   const openAddDialog = () => {
-    setFormData(newTask())
+    setFormData(newTask(id))
     setIsEditing(false)
     setIsDialogOpen(true)
   }
@@ -170,7 +175,7 @@ const TaskTable: React.FC<TaskTableProps> = ({ data, setData }) => {
     const link = document.createElement("a")
 
     link.href = url
-    link.download = "task.csv"
+    link.download = "tasks.csv"
     document.body.append(link)
     link.click()
     link.remove()
