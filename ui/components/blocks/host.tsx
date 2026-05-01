@@ -206,6 +206,7 @@ const HostTable: React.FC<HostTableProps> = ({
     }
 
     setData(Array.from(unique.values()))
+    setId(1000)
   }
   const downloadCsv = () => {
     const header = HOST_HEADERS.join(",")

@@ -163,6 +163,7 @@ const TaskTable: React.FC<TaskTableProps> = ({ data, setData, id, setId }) => {
     }
 
     setData(Array.from(unique.values()))
+    setId(1000)
   }
   const downloadCsv = () => {
     const header = TASK_HEADERS.join(",")

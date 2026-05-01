@@ -184,11 +184,16 @@ async def run_simulation(
     sim.run()
 
     vm_utilization = sim.get_vm_utilization()
+    metrics = sim.get_metrics()
     task_history = task_history_to_json()
 
     os.remove(tmp_path)
 
-    return {"vmUtilization": vm_utilization, "taskHistory": task_history}
+    return {
+        "vmUtilization": vm_utilization,
+        "taskHistory": task_history,
+        "metrics": metrics,
+    }
 
 
 @app.post("/api/save_results")

@@ -166,6 +166,7 @@ const VMTable: React.FC<VMTableProps> = ({ data, setData, id, setId }) => {
     }
 
     setData(Array.from(unique.values()))
+    setId(1000)
   }
   const downloadCsv = () => {
     const header = VM_HEADERS.join(",")

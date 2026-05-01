@@ -39,7 +39,7 @@ const GanttChart: React.FC<GanttChartProps> = ({ tasks }) => {
       <CardHeader className="border-b">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <CardTitle>Task exectuion timeline</CardTitle>
+            <CardTitle>Task execution timeline</CardTitle>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {vmOrder.map((vm) => (

@@ -220,7 +220,6 @@ class Task:
         self.input_size: int = input_size
         self.output_size: int = output_size
         self.pes_number: int = pes_number
-        self.finish_time: int | None = None
         self.vm: VM | None = None
 
         if id is None:
@@ -243,11 +242,18 @@ class TaskScheduler(ABC):
 
     def __init__(self, env: Environment, vm_list: list[VM]) -> None:
         self.env: Environment = env
+        self.vm_list: list[VM] = [x for x in vm_list]
         self.free_vm_list: list[VM] = [x for x in vm_list]
         self.running_vm_list: list[VM] = []
         self.vm_utilization: dict[str, tuple[float, float, float]] = {
             vm.id: (0, 0, 0) for vm in vm_list
         }  # maximum resources used on vm
+        # metrics
+        self.task_arrival_time: dict[str, SimTime] = {}
+        self.task_start_time: dict[str, SimTime] = {}
+        self.task_end_time: dict[str, SimTime] = {}
+        self.rejected_tasks: dict[str, str] = {}
+        self.total_tasks: int = 0
 
     def vm_can_run_task(self, vm: VM, task: Task) -> bool:
         return (
@@ -256,11 +262,25 @@ class TaskScheduler(ABC):
             and vm.storage >= (task.output_size + task.input_size)
         )
 
+    def compute_time(self, vm: VM, task: Task) -> SimTime:
+        # length = MI | mips_capacity = MIPS * PEs
+        mips_capacity = vm.pe_mips * task.pes_number
+        return task.length / mips_capacity
+
+    def transfer_time(self, size: int, vm: VM) -> SimTime:
+        # size = MB | bandwidth = MB/s
+        return size / vm.bandwidth
+
     def run_task(self, task: Task) -> Generator[Process | Timeout, Any, Any]:
-        time_start = self.env.now
-        yield self.env.timeout(task.length)
-        time_end = self.env.now
         task_vm = task.get_vm()
+        time_start = self.env.now
+
+        yield self.env.timeout(self.transfer_time(task.input_size, task_vm))
+        yield self.env.timeout(self.compute_time(task_vm, task))
+        yield self.env.timeout(self.transfer_time(task.output_size, task_vm))
+
+        time_end = self.env.now
+        self.task_end_time[task.id] = time_end
 
         if task.id in TASKS_HISTORY:
             TASKS_HISTORY[task.id].append((time_start, time_end, task_vm.id))
@@ -277,6 +297,12 @@ class TaskScheduler(ABC):
         return (pes_number, ram, storage)
 
     def schedule_task(self, task: Task) -> Generator[Process | Timeout, Any, Any]:
+        _ = self.task_arrival_time.setdefault(task.id, self.env.now)
+
+        if not any(self.vm_can_run_task(vm, task) for vm in self.vm_list):
+            self.rejected_tasks[task.id] = "No VM can satisfy task requirements"
+            return
+
         while True:
             vm = next(
                 (vm for vm in self.free_vm_list if self.vm_can_run_task(vm, task)), None
@@ -284,14 +310,63 @@ class TaskScheduler(ABC):
             if vm:
                 self.free_vm_list.remove(vm)
                 task.set_vm(vm)
+                self.task_start_time[task.id] = self.env.now
                 self.running_vm_list.append(vm)
-                self.vm_utilization[vm.id] = max(
-                    self.vm_utilization[vm.id], self.used_vm_resources(vm, task)
+                vm_usage = self.used_vm_resources(vm, task)
+                current_usage = self.vm_utilization[vm.id]
+                self.vm_utilization[vm.id] = (
+                    max(current_usage[0], vm_usage[0]),
+                    max(current_usage[1], vm_usage[1]),
+                    max(current_usage[2], vm_usage[2]),
                 )
                 yield self.env.process(self.run_task(task))
                 break
             else:
                 yield self.env.timeout(1)
+
+    def get_metrics(self) -> dict[str, float | int | list[str]]:
+        completed_task_ids = list(self.task_end_time.keys())
+        completed_count = len(completed_task_ids)
+        rejected_count = len(self.rejected_tasks)
+
+        makespan = 0.0
+        avg_waiting_time = 0.0
+        throughput = 0.0
+
+        if completed_task_ids:
+            first_arrival = min(
+                self.task_arrival_time[task_id] for task_id in completed_task_ids
+            )
+            last_finish = max(
+                self.task_end_time[task_id] for task_id in completed_task_ids
+            )
+            makespan = float(last_finish - first_arrival)
+
+            waiting_times = [
+                self.task_start_time[task_id] - self.task_arrival_time[task_id]
+                for task_id in completed_task_ids
+            ]
+            avg_waiting_time = float(sum(waiting_times) / completed_count)
+            if makespan > 0:
+                throughput = float(completed_count / makespan)
+            else:
+                throughput = 0.0
+
+        if self.total_tasks:
+            rejected_percent = rejected_count / self.total_tasks * 100.0
+        else:
+            rejected_percent = 0.0
+
+        return {
+            "makespan": round(makespan, 2),
+            "average_waiting_time": round(avg_waiting_time, 2),
+            "throughput": round(throughput, 2),
+            "rejected_tasks_percent": round(rejected_percent, 2),
+            "total_tasks": self.total_tasks,
+            "completed_tasks": completed_count,
+            "rejected_tasks": rejected_count,
+            "rejected_task_ids": sorted(list(self.rejected_tasks.keys())),
+        }
 
     def get_utilization(self) -> dict[str, dict[str, float]]:
         out: dict[str, dict[str, float]] = {}
@@ -303,13 +378,22 @@ class TaskScheduler(ABC):
             }
         return out
 
+    def print_metrics(self) -> None:
+        metrics = self.get_metrics()
+        print(f"""Simulation metrics:
+\tMakespan             - {metrics["makespan"]}
+\tAverage waiting time - {metrics["average_waiting_time"]}
+\tThroughput           - {metrics["throughput"]}
+\tRejected tasks       - {metrics["rejected_tasks_percent"]} %
+\tCompleted/Total      - {metrics["completed_tasks"]}/{metrics["total_tasks"]}""")
+
     def print_utilization(self) -> None:
         u = self.get_utilization()
         for vm in u:
             print(f"""Maximum utilization in {vm}:
-\tPEs:     {u[vm]["PE"]:.2f} %
-\tRAM:     {u[vm]["RAM"]:.2f} %
-\tStorage: {u[vm]["Storage"]:.2f} %""")
+\tPEs     - {u[vm]["PE"]:.2f} %
+\tRAM     - {u[vm]["RAM"]:.2f} %
+\tStorage - {u[vm]["Storage"]:.2f} %""")
 
     @abstractmethod
     def schedule_all(self, tasks: list[Task]) -> Generator[AllOf, Any, None]:
@@ -341,16 +425,19 @@ class DefaultVMAllocation(VMAllocation):
     def allocate_vms_in_datacenters(
         self, vm_list: list[VM], datacenter_list: list[Datacenter]
     ) -> None:
-        for dc in datacenter_list:
-            for vm in vm_list:
-                self.assign_vm_to_host(vm, dc.host_list)
+        host_list = [
+            host for datacenter in datacenter_list for host in datacenter.host_list
+        ]
+        for vm in vm_list:
+            if vm.host_id is None:
+                self.assign_vm_to_host(vm, host_list)
 
     @override
     def assign_vm_to_host(self, vm: VM, host_list: list[Host]) -> None:
         available_hosts = [h for h in host_list if h.can_allocate_vm(vm)]
         if not available_hosts:
             raise Exception("can't allocate VM to Host")
-        host = max(host_list, key=lambda h: h.available_resources())
+        host = max(available_hosts, key=lambda h: h.available_resources())
         host.add_vm(vm)
 
 
@@ -400,17 +487,28 @@ class Simulation:
 \tTotal cost         - {cost_total}\n""")
 
     def run(self) -> None:
+        TASKS_HISTORY.clear()
+        LAST_RUN_INFO.clear()
         LAST_RUN_INFO["datacenter"] = self.datacenter
         LAST_RUN_INFO["hosts"] = self.host_list
         LAST_RUN_INFO["vms"] = self.vm_list
         LAST_RUN_INFO["tasks"] = self.task_list
+        self.task_scheduler.total_tasks = len(self.task_list)
         self._print_simulation_info()
         print()
         _ = self.env.process(self.task_scheduler.schedule_all(self.task_list))
         _ = self.env.run()
         LAST_RUN_INFO["vm_utilization"] = self.get_vm_utilization()
+        LAST_RUN_INFO["metrics"] = self.get_metrics()
         LAST_RUN_INFO["task_history"] = TASKS_HISTORY
+        print_task_history_table()
+        print()
         self.task_scheduler.print_utilization()
+        print()
+        self.task_scheduler.print_metrics()
+
+    def get_metrics(self) -> dict[str, float | int | list[str]]:
+        return self.task_scheduler.get_metrics()
 
     def get_vm_utilization(self) -> dict[str, dict[str, float]]:
         return self.task_scheduler.get_utilization()
@@ -425,7 +523,7 @@ class Simulation:
                 print(
                     f"        {vm.id} (RAM: {vm.ram}, BANDWIDTH: {vm.bandwidth}, STORAGE: {vm.storage}, CPU: {vm.pes_number}, MIPS: {vm.pe_mips})"
                 )
-        print("\nList of tasks")
+        print("\nList of tasks:")
         for t in self.task_list:
             print(
                 f"{t.id} (LENGTH: {t.length}, INPUT SIZE: {t.input_size}, OUTPUT SIZE: {t.output_size}, CPU: {t.pes_number})"
@@ -496,27 +594,6 @@ def save_entities(prefix: str) -> None:
         w.writerows(tasks)
 
 
-def save_all_results() -> str:
-    timestamp = datetime.now().strftime("%d%m%y%H%M%S")
-    location = f"results/{timestamp}/"
-    folder = Path(location)
-    folder.mkdir(parents=True, exist_ok=True)
-
-    save_entities(location)
-
-    task_history_json = task_history_to_json()
-    task_history_csv = task_history_to_csv()
-    with open(f"{location}task_history.json", "w") as f:
-        json.dump(task_history_json, f, indent=2)
-    with open(f"{location}task_history.csv", "w") as f:
-        w = csv.writer(f)
-        w.writerows(task_history_csv)
-
-    with open(f"{location}vm_utilization.json", "w") as f:
-        json.dump(LAST_RUN_INFO["vm_utilization"], f, indent=2)
-    return location
-
-
 def task_history_to_json() -> dict[str, list[Any]]:
     data: dict[str, list[Any]] = {"tasks": []}
     for k, v in TASKS_HISTORY.items():
@@ -524,8 +601,8 @@ def task_history_to_json() -> dict[str, list[Any]]:
         for seg in v:
             segments.append(
                 {
-                    "start": seg[0],
-                    "end": seg[1],
+                    "start": round(seg[0], 3),
+                    "end": round(seg[1], 3),
                     "vm": seg[2],
                 }
             )
@@ -544,8 +621,53 @@ def task_history_to_csv() -> list[list[str]]:
         for seg in v:
             row = []
             row.append(k)
-            row.append(seg[0])
-            row.append(seg[1])
+            row.append(round(seg[0], 3))
+            row.append(round(seg[1], 3))
             row.append(seg[2])
             data.append(row)
     return data
+
+
+def print_task_history_table() -> None:
+    data = task_history_to_csv()
+    col_count = len(data[0])
+    col_widths = [0] * col_count
+    for row in data:
+        for i, cell in enumerate(row):
+            col_widths[i] = max(col_widths[i], len(str(cell)))
+
+    headers = data[0]
+    print(
+        f"{headers[0]:{col_widths[0]}} | {headers[1]:{col_widths[1]}} | {headers[2]:{col_widths[2]}} | {headers[3]:{col_widths[3]}}"
+    )
+    print(
+        f"{'-' * col_widths[0]}-+-{'-' * col_widths[1]}-+-{'-' * col_widths[2]}-+-{'-' * col_widths[3]}"
+    )
+    for row in data[1:]:
+        print(
+            f"{row[0]:{col_widths[0]}} | {row[1]:{col_widths[1]}} | {row[2]:{col_widths[2]}} | {row[3]:{col_widths[3]}}"
+        )
+
+
+def save_all_results() -> str:
+    timestamp = datetime.now().strftime("%d%m%y%H%M%S")
+    location = f"results/{timestamp}/"
+    folder = Path(location)
+    folder.mkdir(parents=True, exist_ok=True)
+
+    save_entities(location)
+
+    task_history_json = task_history_to_json()
+    task_history_csv = task_history_to_csv()
+    with open(f"{location}task_history.json", "w") as f:
+        json.dump(task_history_json, f, indent=2)
+    with open(f"{location}task_history.csv", "w") as f:
+        w = csv.writer(f)
+        w.writerows(task_history_csv)
+
+    with open(f"{location}vm_utilization.json", "w") as f:
+        json.dump(LAST_RUN_INFO["vm_utilization"], f, indent=2)
+
+    with open(f"{location}metrics.json", "w") as f:
+        json.dump(LAST_RUN_INFO["metrics"], f, indent=2)
+    return location
