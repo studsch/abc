@@ -22,6 +22,7 @@ import {
 } from "@/lib/types"
 import GanttChart from "@/components/blocks/gantt-chart"
 import VmUtilization from "@/components/blocks/vm-utilization"
+import MetricsSection from "@/components/blocks/metrics"
 
 interface RunScriptProps {
   vmPolicyOptions: string[]
@@ -253,6 +254,12 @@ const RunScript: React.FC<RunScriptProps> = ({
           </div>
         </div>
       </section>
+
+      {res && (
+        <section className="border-t p-4 md:p-5">
+          <MetricsSection metrics={res.metrics} />
+        </section>
+      )}
 
       {res && (
         <section className="border-t p-4 md:p-5">

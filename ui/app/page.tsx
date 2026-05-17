@@ -5,7 +5,9 @@ import HostTable from "@/components/blocks/host"
 import RunScript from "@/components/blocks/run-script"
 import TaskTable from "@/components/blocks/task"
 import VMTable from "@/components/blocks/vm"
+import { buttonVariants } from "@/components/ui/button"
 import { DatacenterInfo, HostInfo, TaskInfo, VMInfo } from "@/lib/types"
+import Link from "next/link"
 import { useEffect, useState } from "react"
 
 export default function Page() {
@@ -51,14 +53,12 @@ export default function Page() {
               Cost: {totalCost.toString()}
             </h1>
           </div>
-          <a
-            href="https://github.com/"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-2 font-medium text-foreground transition-colors hover:text-muted-foreground"
+          <Link
+            href="/metrics"
+            className={buttonVariants({ variant: "secondary", size: "sm" })}
           >
-            GitHub
-          </a>
+            Compare metrics
+          </Link>
         </header>
 
         <section className="flex flex-col gap-4 p-4 md:p-5">

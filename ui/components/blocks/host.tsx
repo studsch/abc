@@ -261,7 +261,7 @@ const HostTable: React.FC<HostTableProps> = ({
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border bg-background/96">
+        <div className="max-h-87.5 overflow-hidden overflow-y-auto rounded-xl border bg-background/96">
           <Table>
             <TableHeader className="bg-muted/55">
               <TableRow>

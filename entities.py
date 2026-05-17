@@ -508,7 +508,9 @@ class Simulation:
         self.task_scheduler.print_metrics()
 
     def get_metrics(self) -> dict[str, float | int | list[str]]:
-        return self.task_scheduler.get_metrics()
+        metrics = self.task_scheduler.get_metrics()
+        metrics["average_execution_time"] = round(get_avg_execution_time(), 2)
+        return metrics
 
     def get_vm_utilization(self) -> dict[str, dict[str, float]]:
         return self.task_scheduler.get_utilization()
@@ -528,6 +530,19 @@ class Simulation:
             print(
                 f"{t.id} (LENGTH: {t.length}, INPUT SIZE: {t.input_size}, OUTPUT SIZE: {t.output_size}, CPU: {t.pes_number})"
             )
+
+
+def get_avg_execution_time() -> float:
+    execution_times: list[SimTime] = []
+    for segments in TASKS_HISTORY.values():
+        start, end = -1, -1
+        for seg in segments:
+            if start == -1:
+                start = seg[0]
+            end = seg[1]
+        execution_times.append(end - start)
+    avg = sum(execution_times) / len(execution_times)
+    return avg
 
 
 def save_entities(prefix: str) -> None:

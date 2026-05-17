@@ -65,4 +65,17 @@ export interface SimulationResponse {
     tasks: Task[]
   }
   vmUtilization: Record<string, VmResources>
+  metrics: Metrics
+}
+
+export interface Metrics {
+  makespan: number
+  average_waiting_time: number
+  throughput: number
+  rejected_tasks_percent: number
+  total_tasks: number
+  completed_tasks: number
+  rejected_tasks: number
+  rejected_task_ids: string[]
+  average_execution_time: number
 }
