@@ -1,6 +1,5 @@
 import math
 from typing import Any, override
-import simpy
 from simpy.events import AllOf
 from collections.abc import Generator
 from entities import Task, TaskScheduler, VM
