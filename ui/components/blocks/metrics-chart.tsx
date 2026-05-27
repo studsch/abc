@@ -338,7 +338,7 @@ const MetricsCharts: React.FC = () => {
                     onClick={() => singleFileInputRef.current?.click()}
                   >
                     <Upload data-icon="inline-start" />
-                    Unpload file
+                    upload file
                   </Button>
                 </div>
               </CardContent>
@@ -385,7 +385,7 @@ const MetricsCharts: React.FC = () => {
                     onClick={() => directoryInputRef.current?.click()}
                   >
                     <FolderOpen data-icon="inline-start" />
-                    Choose folder
+                    choose folder
                   </Button>
                 </div>
               </CardContent>

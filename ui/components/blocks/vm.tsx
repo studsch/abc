@@ -27,7 +27,7 @@ import { Field, FieldGroup } from "@/components/ui/field"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { VMInfo } from "@/lib/types"
-import { MoreVertical } from "lucide-react"
+import { Download, MoreVertical, Upload } from "lucide-react"
 import React, { useState, SubmitEventHandler, ChangeEvent, useRef } from "react"
 import { Badge } from "@/components/ui/badge"
 import { parseCsv } from "@/lib/utils"
@@ -209,9 +209,11 @@ const VMTable: React.FC<VMTableProps> = ({ data, setData, id, setId }) => {
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
               >
+                <Upload data-icon="inline-start" />
                 upload CSV
               </Button>
               <Button size="sm" variant="outline" onClick={downloadCsv}>
+                <Download data-icon="inline-start" />
                 download CSV
               </Button>
               <Button size="sm" onClick={openAddDialog}>

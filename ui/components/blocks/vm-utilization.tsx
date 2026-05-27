@@ -29,6 +29,7 @@ import {
 } from "recharts"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
+import { Download } from "lucide-react"
 
 interface VmUtilizationProps {
   vmUtilization: Record<string, VmResources>
@@ -220,6 +221,7 @@ const VmUtilization: React.FC<VmUtilizationProps> = ({ vmUtilization }) => {
               <CardTitle>VM peak utilization</CardTitle>
             </div>
             <Button size="sm" variant="outline" onClick={save_results}>
+              <Download data-icon="inline-start" />
               download all results
             </Button>
           </div>

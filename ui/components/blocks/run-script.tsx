@@ -198,7 +198,7 @@ const RunScript: React.FC<RunScriptProps> = ({
               onClick={() => pythonFileInputRef.current?.click()}
             >
               <Upload data-icon="inline-start" />
-              Upload python file
+              upload python file
             </Button>
 
             <Select

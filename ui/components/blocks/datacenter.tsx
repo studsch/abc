@@ -27,7 +27,7 @@ import { Field, FieldGroup } from "@/components/ui/field"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { DatacenterInfo, HostInfo } from "@/lib/types"
-import { MoreVertical } from "lucide-react"
+import { Download, MoreVertical, Upload } from "lucide-react"
 import React, {
   useState,
   SubmitEventHandler,
@@ -200,9 +200,11 @@ const DatacenterTable: React.FC<DatacenterTableProps> = ({
                 variant="outline"
                 onClick={() => fileInputRef.current?.click()}
               >
+                <Upload data-icon="inline-start" />
                 upload CSV
               </Button>
               <Button size="sm" variant="outline" onClick={downloadCsv}>
+                <Download data-icon="inline-start" />
                 download CSV
               </Button>
             </div>

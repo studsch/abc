@@ -1,16 +1,14 @@
-import { Source_Code_Pro } from "next/font/google"
-
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
 import { Toaster } from "@/components/ui/sonner"
+import { Roboto, Roboto_Mono } from "next/font/google"
 
-const sourceCodePro = Source_Code_Pro({
+const fontSans = Roboto({
   subsets: ["latin"],
   variable: "--font-sans",
 })
-
-const fontMono = Source_Code_Pro({
+const fontMono = Roboto_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
 })
@@ -28,7 +26,7 @@ export default function RootLayout({
         "antialiased",
         fontMono.variable,
         "font-sans",
-        sourceCodePro.variable
+        fontSans.variable
       )}
     >
       <body>
