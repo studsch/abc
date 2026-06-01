@@ -199,16 +199,19 @@ const VmUtilization: React.FC<VmUtilizationProps> = ({ vmUtilization }) => {
   let maxRAM = 0
   let maxStorage = 0
   for (const k in vmUtilization) {
-    maxPEs = Math.max(maxPEs, vmUtilization[k]["PE"])
-    maxRAM = Math.max(maxRAM, vmUtilization[k]["RAM"])
-    maxStorage = Math.max(maxStorage, vmUtilization[k]["Storage"])
+    let curPEs = vmUtilization[k]["PE"]
+    let curRAM = vmUtilization[k]["RAM"]
+    let curStorage = vmUtilization[k]["Storage"]
+    maxPEs = Math.max(maxPEs, curPEs)
+    maxRAM = Math.max(maxRAM, curRAM)
+    maxStorage = Math.max(maxStorage, curStorage)
 
-    if (maxPEs >= maxRAM && maxPEs >= maxStorage) {
-      vmUtilization[k]["dominant"] = `PEs ${maxPEs.toFixed(2)} %`
-    } else if (maxRAM >= maxPEs && maxRAM >= maxStorage) {
-      vmUtilization[k]["dominant"] = `RAM ${maxRAM.toFixed(2)} %`
+    if (curPEs >= curRAM && curPEs >= curStorage) {
+      vmUtilization[k]["dominant"] = `PEs ${curPEs.toFixed(2)} %`
+    } else if (curRAM >= curPEs && curRAM >= curStorage) {
+      vmUtilization[k]["dominant"] = `RAM ${curRAM.toFixed(2)} %`
     } else {
-      vmUtilization[k]["dominant"] = `Storage ${maxRAM.toFixed(2)} %`
+      vmUtilization[k]["dominant"] = `Storage ${curRAM.toFixed(2)} %`
     }
   }
 

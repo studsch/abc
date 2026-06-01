@@ -25,34 +25,34 @@ class SJFTaskScheduler(TaskScheduler):
         yield self.env.all_of(events)
 
 
-class MinMaxTaskScheduler(TaskScheduler):
-    def _task_worst_time(self, task: Task) -> float:
-        durations: list[float] = []
-        for vm in self.vm_list:
-            if self.vm_can_run_task(vm, task):
-                duration = float(
-                    self.transfer_time(task.input_size, vm)
-                    + self.compute_time(vm, task)
-                    + self.transfer_time(task.output_size, vm)
-                )
-                durations.append(duration)
-
-        if not durations:
-            return math.inf
-        return max(durations)
-
-    @override
-    def schedule_all(self, tasks: list[Task]) -> Generator[AllOf, Any, None]:
-        pending = list(tasks)
-        ordered: list[Task] = []
-
-        while pending:
-            candidate = min(pending, key=self._task_worst_time)
-            ordered.append(candidate)
-            pending.remove(candidate)
-
-        events = [self.env.process(self.schedule_task(t)) for t in ordered]
-        yield self.env.all_of(events)
+# class MinMaxTaskScheduler(TaskScheduler):
+#     def _task_worst_time(self, task: Task) -> float:
+#         durations: list[float] = []
+#         for vm in self.vm_list:
+#             if self.vm_can_run_task(vm, task):
+#                 duration = float(
+#                     self.transfer_time(task.input_size, vm)
+#                     + self.compute_time(vm, task)
+#                     + self.transfer_time(task.output_size, vm)
+#                 )
+#                 durations.append(duration)
+#
+#         if not durations:
+#             return math.inf
+#         return max(durations)
+#
+#     @override
+#     def schedule_all(self, tasks: list[Task]) -> Generator[AllOf, Any, None]:
+#         pending = list(tasks)
+#         ordered: list[Task] = []
+#
+#         while pending:
+#             candidate = min(pending, key=self._task_worst_time)
+#             ordered.append(candidate)
+#             pending.remove(candidate)
+#
+#         events = [self.env.process(self.schedule_task(t)) for t in ordered]
+#         yield self.env.all_of(events)
 
 
 class MinMinTaskScheduler(TaskScheduler):
@@ -286,3 +286,64 @@ class GreyWolfTaskScheduler(TaskScheduler):
 
         events = [self.env.process(self.schedule_task(task)) for task in ordered]
         yield self.env.all_of(events)
+
+
+# AI-generated.
+# Only `entities.py` and a few implementation examples were fed in.
+# Attention: this code has not been modified in any way since generation and its correct operation is not guaranteed.
+class RoundRobinTaskScheduler(TaskScheduler):
+    def __init__(self, env, vm_list: list[VM]) -> None:
+        super().__init__(env, vm_list)
+        self.next_vm_index = 0
+
+    def _select_vm(self, task: Task) -> VM | None:
+        if not self.vm_list:
+            return None
+
+        for offset in range(len(self.vm_list)):
+            idx = (self.next_vm_index + offset) % len(self.vm_list)
+            vm = self.vm_list[idx]
+            if self.vm_can_run_task(vm, task):
+                self.next_vm_index = (idx + 1) % len(self.vm_list)
+                return vm
+
+        return None
+
+    def _schedule_task_on_vm(self, task: Task, vm: VM) -> Generator[Any, Any, None]:
+        self.task_arrival_time.setdefault(task.id, self.env.now)
+
+        while vm not in self.free_vm_list:
+            yield self.env.timeout(1)
+
+        self.free_vm_list.remove(vm)
+        task.set_vm(vm)
+        self.task_start_time[task.id] = self.env.now
+        self.running_vm_list.append(vm)
+
+        vm_usage = self.used_vm_resources(vm, task)
+        current_usage = self.vm_utilization[vm.id]
+        self.vm_utilization[vm.id] = (
+            max(current_usage[0], vm_usage[0]),
+            max(current_usage[1], vm_usage[1]),
+            max(current_usage[2], vm_usage[2]),
+        )
+
+        yield self.env.process(self.run_task(task))
+
+    @override
+    def schedule_all(self, tasks: list[Task]) -> Generator[AllOf, Any, None]:
+        self.total_tasks = len(tasks)
+        events = []
+
+        for task in tasks:
+            vm = self._select_vm(task)
+            if vm is None:
+                self.task_arrival_time.setdefault(task.id, self.env.now)
+                self.rejected_tasks[task.id] = "No VM can satisfy task requirements"
+            else:
+                events.append(self.env.process(self._schedule_task_on_vm(task, vm)))
+
+        if events:
+            yield self.env.all_of(events)
+        else:
+            yield self.env.timeout(0)
