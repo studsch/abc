@@ -4,7 +4,7 @@ import { Task } from "@/lib/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 
-interface GanttChartProps {
+interface TaskGanttChartProps {
   tasks: Task[]
 }
 
@@ -12,7 +12,7 @@ const clamp = (value: number, min: number, max: number) => {
   return Math.min(Math.max(value, min), max)
 }
 
-const GanttChart: React.FC<GanttChartProps> = ({ tasks }) => {
+const TaskGanttChart: React.FC<TaskGanttChartProps> = ({ tasks }) => {
   const segments = tasks.flatMap((task) => task.segments)
   const minTime =
     segments.length > 0
@@ -107,4 +107,4 @@ const GanttChart: React.FC<GanttChartProps> = ({ tasks }) => {
   )
 }
 
-export default GanttChart
+export default TaskGanttChart

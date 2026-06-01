@@ -20,9 +20,10 @@ import {
   PolicyReponse,
   SimulationResponse,
 } from "@/lib/types"
-import GanttChart from "@/components/blocks/gantt-chart"
+import TaskGanttChart from "@/components/blocks/task-gantt-chart"
 import VmUtilization from "@/components/blocks/vm-utilization"
 import MetricsSection from "@/components/blocks/metrics"
+import VmGanttChart from "@/components/blocks/vm-gantt-chart"
 
 interface RunScriptProps {
   vmPolicyOptions: string[]
@@ -262,9 +263,14 @@ const RunScript: React.FC<RunScriptProps> = ({
       )}
 
       {res && (
-        <section className="border-t p-4 md:p-5">
-          <GanttChart tasks={res.taskHistory.tasks} />
-        </section>
+        <div>
+          <section className="border-t p-4 md:p-5">
+            <TaskGanttChart tasks={res.taskHistory.tasks} />
+          </section>
+          <section className="border-t p-4 md:p-5">
+            <VmGanttChart tasks={res.taskHistory.tasks} />
+          </section>
+        </div>
       )}
 
       {res && (
