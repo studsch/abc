@@ -211,7 +211,7 @@ const VmUtilization: React.FC<VmUtilizationProps> = ({ vmUtilization }) => {
     } else if (curRAM >= curPEs && curRAM >= curStorage) {
       vmUtilization[k]["dominant"] = `RAM ${curRAM.toFixed(2)} %`
     } else {
-      vmUtilization[k]["dominant"] = `Storage ${curRAM.toFixed(2)} %`
+      vmUtilization[k]["dominant"] = `Storage ${curStorage.toFixed(2)} %`
     }
   }
 
